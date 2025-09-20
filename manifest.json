@@ -1,0 +1,27 @@
+{
+  "name": "GFZA Chat - Ghana Free Zones Authority",
+  "short_name": "GFZA Chat",
+  "description": "Official Chat Application for Ghana Free Zones Authority",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./gfza-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "./gfza-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "communication"],
+  "lang": "en",
+  "dir": "ltr"
+}
