@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GFZA Chat - Ghana Free Zones Authority</title>
-    <meta name="description" content="Official Chat Application for Ghana Free Zones Authority">
+    <meta name="description" content="Official Team Communication Platform for Ghana Free Zones Authority">
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1e40af">
+    <meta name="theme-color" content="#059669">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="GFZA Chat">
@@ -16,134 +16,309 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        .chat-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        .gfza-gradient {
+            background: linear-gradient(135deg, #059669 0%, #dc2626 100%);
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
         }
         .message-bubble {
-            animation: fadeIn 0.3s ease-in;
+            animation: slideIn 0.3s ease-out;
         }
-        @keyframes fadeIn {
+        @keyframes slideIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .typing-indicator {
-            animation: pulse 1.5s infinite;
+        .emoji-reaction {
+            transition: all 0.2s ease;
+        }
+        .emoji-reaction:hover {
+            transform: scale(1.1);
+        }
+        .online-indicator {
+            animation: pulse 2s infinite;
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.7; }
         }
     </style>
 </head>
-<body>
-    <div id="app" class="chat-container">
-        <!-- Loading Screen -->
-        <div id="loading" class="flex items-center justify-center min-h-screen">
-            <div class="text-center">
-                <div class="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">GFZA</span>
-                    </div>
-                </div>
-                <h1 class="text-2xl font-bold text-white mb-2">GFZA Chat</h1>
-                <p class="text-white/80">Ghana Free Zones Authority</p>
-                <div class="mt-4">
-                    <div class="inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Auth Screen -->
-        <div id="auth" class="hidden min-h-screen flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-                <div class="text-center mb-8">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span class="text-white font-bold text-xl">GFZA</span>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-800">Welcome to GFZA Chat</h2>
-                    <p class="text-gray-600 mt-2">Ghana Free Zones Authority</p>
-                </div>
-
-                <form id="authForm" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                        <input type="text" id="fullName" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Enter your full name">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" id="email" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="your.email@gfza.gov.gh">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                        <select id="department" required 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select your department</option>
-                            <option value="administration">Administration</option>
-                            <option value="finance">Finance</option>
-                            <option value="operations">Operations</option>
-                            <option value="legal">Legal</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="hr">Human Resources</option>
-                            <option value="it">Information Technology</option>
-                            <option value="security">Security</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" 
-                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                        Enter GFZA Chat
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Chat Screen -->
-        <div id="chat" class="hidden min-h-screen flex flex-col">
+<body class="bg-gray-50 h-screen overflow-hidden">
+    <!-- Main Container -->
+    <div class="flex h-full">
+        <!-- Left Sidebar -->
+        <div class="w-80 sidebar-gradient border-r border-gray-200 flex flex-col">
             <!-- Header -->
-            <div class="bg-white/10 backdrop-blur-sm border-b border-white/20 p-4">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gfza-gradient rounded-lg flex items-center justify-center shadow-lg">
+                        <span class="text-white font-bold text-sm">GFZA</span>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-800">GFZA Chat</h1>
+                        <p class="text-sm text-gray-600">Ghana Free Zones Authority</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm font-semibold">MB</span>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-800">Mohammed Bukari</p>
+                        <p class="text-xs text-gray-500">MIS</p>
+                    </div>
+                    <div class="w-3 h-3 bg-green-500 rounded-full online-indicator"></div>
+                </div>
+            </div>
+
+            <!-- Channels -->
+            <div class="flex-1 overflow-y-auto">
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Channels</h3>
+                        <button class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-blue-100 text-blue-800 cursor-pointer">
+                            <span class="text-sm">#</span>
+                            <span class="text-sm font-medium">General</span>
+                            <div class="flex items-center space-x-1 ml-auto">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-xs">5</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <span class="text-sm text-gray-500">#</span>
+                            <span class="text-sm text-gray-700">HR Team</span>
+                            <div class="flex items-center space-x-1 ml-auto">
+                                <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-xs text-gray-400">1</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <span class="text-sm text-gray-500">#</span>
+                            <span class="text-sm text-gray-700">Accounts</span>
+                            <div class="flex items-center space-x-1 ml-auto">
+                                <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-xs text-gray-400">1</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <span class="text-sm text-gray-500">#</span>
+                            <span class="text-sm text-gray-700">Operations</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <span class="text-sm text-gray-500">#</span>
+                            <span class="text-sm text-gray-700">Legal</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <span class="text-sm text-gray-500">#</span>
+                            <span class="text-sm text-gray-700">Finance</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Online Users -->
+                <div class="p-4 border-t border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Online Users</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-xs font-semibold">JD</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">John Doe</p>
+                                <p class="text-xs text-gray-500">HR</p>
+                            </div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-xs font-semibold">SJ</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Sarah Johnson</p>
+                                <p class="text-xs text-gray-500">ACCOUNTS</p>
+                            </div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-xs font-semibold">AK</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">Alex Kwame</p>
+                                <p class="text-xs text-gray-500">OPERATIONS</p>
+                            </div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-200 bg-white">
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Developed by GFZA MIS</p>
+                    <p class="text-xs text-gray-400">© 2025 Ghana Free Zones Authority</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Chat Header -->
+            <div class="bg-white border-b border-gray-200 p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                            <span class="text-blue-600 font-bold">GFZA</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xl">#</span>
+                            <h2 class="text-lg font-semibold text-gray-800">General</h2>
                         </div>
-                        <div>
-                            <h1 class="text-white font-semibold">GFZA Chat</h1>
-                            <p class="text-white/80 text-sm" id="userInfo">Welcome</p>
+                        <div class="flex items-center space-x-1 text-gray-500">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-sm">5 members</span>
                         </div>
                     </div>
-                    <button id="logoutBtn" class="text-white/80 hover:text-white transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    
+                    <div class="flex items-center space-x-3">
+                        <button class="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">Call</span>
+                        </button>
+                        
+                        <button class="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">Video</span>
+                        </button>
+                        
+                        <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messagesContainer">
+                <!-- System Message -->
+                <div class="message-bubble">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">S</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-800">System</span>
+                                <span class="text-xs text-gray-500">10:23 PM</span>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p class="text-sm text-blue-800">Welcome to GFZA Chat Base! 🎉 This is your secure internal communication platform.</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
+                                        👍 2
+                                    </button>
+                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
+                                        🎉 1
+                                    </button>
+                                    <button class="emoji-reaction bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs hover:bg-red-200">
+                                        ❤️ 1
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Message 2 -->
+                <div class="message-bubble">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">S</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-800">System</span>
+                                <span class="text-xs text-gray-500">10:24 PM</span>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <p class="text-sm text-green-800">Feel free to start chatting with your colleagues. All conversations are encrypted and secure.</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
+                                        👍 2
+                                    </button>
+                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
+                                        🎉 1
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="bg-white border-t border-gray-200 p-4">
+                <div class="flex items-center space-x-3">
+                    <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"></path>
                         </svg>
                     </button>
-                </div>
-            </div>
-
-            <!-- Messages -->
-            <div id="messages" class="flex-1 p-4 space-y-4 overflow-y-auto">
-                <div class="text-center">
-                    <div class="inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                        <p class="text-white/80 text-sm">Welcome to GFZA Chat! Start a conversation.</p>
+                    
+                    <div class="flex-1 relative">
+                        <input 
+                            type="text" 
+                            id="messageInput"
+                            placeholder="Message # General"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                        >
                     </div>
-                </div>
-            </div>
-
-            <!-- Input -->
-            <div class="p-4 bg-white/10 backdrop-blur-sm border-t border-white/20">
-                <div class="flex space-x-3">
-                    <input type="text" id="messageInput" 
-                           class="flex-1 px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                           placeholder="Type your message...">
-                    <button id="sendBtn" 
-                            class="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-white/90 transition-colors font-medium">
-                        Send
+                    
+                    <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zM9 9a1 1 0 100-2 1 1 0 000 2zm4 0a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                    
+                    <button 
+                        id="sendBtn"
+                        class="gfza-gradient text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium"
+                    >
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -151,153 +326,101 @@
     </div>
 
     <script>
-        // App State
-        let currentUser = null;
-        let messages = [];
-
-        // DOM Elements
-        const loading = document.getElementById('loading');
-        const auth = document.getElementById('auth');
-        const chat = document.getElementById('chat');
-        const authForm = document.getElementById('authForm');
+        // Message functionality
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
-        const messagesContainer = document.getElementById('messages');
-        const userInfo = document.getElementById('userInfo');
-        const logoutBtn = document.getElementById('logoutBtn');
+        const messagesContainer = document.getElementById('messagesContainer');
 
-        // Initialize App
-        setTimeout(() => {
-            loading.classList.add('hidden');
-            auth.classList.remove('hidden');
-        }, 2000);
-
-        // Auth Form Handler
-        authForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const fullName = document.getElementById('fullName').value;
-            const email = document.getElementById('email').value;
-            const department = document.getElementById('department').value;
-
-            currentUser = { fullName, email, department };
-            userInfo.textContent = `${fullName} - ${department.charAt(0).toUpperCase() + department.slice(1)}`;
-            
-            auth.classList.add('hidden');
-            chat.classList.remove('hidden');
-            
-            // Welcome message
-            addMessage('system', `Welcome ${fullName}! You're now connected to GFZA Chat.`);
-        });
-
-        // Send Message
         function sendMessage() {
             const text = messageInput.value.trim();
             if (!text) return;
 
-            addMessage('user', text);
+            // Add user message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-bubble';
+            messageDiv.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">MB</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="font-medium text-gray-800">Mohammed Bukari</span>
+                            <span class="text-xs text-gray-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                            <p class="text-sm text-gray-800">${text}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
             messageInput.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             // Simulate response
             setTimeout(() => {
                 const responses = [
-                    "Thank you for your message. A GFZA representative will respond shortly.",
-                    "Your inquiry has been received and will be processed by the relevant department.",
+                    "Thank you for your message! The relevant GFZA department will respond shortly.",
+                    "Message received and forwarded to the appropriate team at Ghana Free Zones Authority.",
                     "We appreciate your communication. How else can GFZA assist you today?",
-                    "Your message is important to us. We'll get back to you as soon as possible."
+                    "Your inquiry is being processed by our team. We'll get back to you soon.",
+                    "Thank you for reaching out to GFZA. Our team is reviewing your request."
                 ];
-                const response = responses[Math.floor(Math.random() * responses.length)];
-                addMessage('system', response);
-            }, 1000);
-        }
-
-        // Add Message to Chat
-        function addMessage(type, text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message-bubble flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
-            
-            const bubble = document.createElement('div');
-            bubble.className = `max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                type === 'user' 
-                    ? 'bg-white text-gray-800 rounded-br-sm' 
-                    : 'bg-white/20 backdrop-blur-sm text-white rounded-bl-sm'
-            }`;
-            
-            if (type === 'system') {
-                bubble.innerHTML = `<div class="flex items-start space-x-2">
-                    <div class="w-6 h-6 bg-white/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span class="text-xs font-bold">G</span>
+                
+                const responseDiv = document.createElement('div');
+                responseDiv.className = 'message-bubble';
+                responseDiv.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 gfza-gradient rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">G</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-800">GFZA Bot</span>
+                                <span class="text-xs text-gray-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <p class="text-sm text-green-800">${responses[Math.floor(Math.random() * responses.length)]}</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
+                                        👍
+                                    </button>
+                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
+                                        ❤️
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-sm">${text}</div>
-                </div>`;
-            } else {
-                bubble.innerHTML = `<div class="text-sm">${text}</div>`;
-            }
-            
-            messageDiv.appendChild(bubble);
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                `;
+                
+                messagesContainer.appendChild(responseDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 1500);
         }
 
-        // Event Listeners
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
 
-        logoutBtn.addEventListener('click', () => {
-            currentUser = null;
-            messages = [];
-            messagesContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                        <p class="text-white/80 text-sm">Welcome to GFZA Chat! Start a conversation.</p>
-                    </div>
-                </div>
-            `;
-            chat.classList.add('hidden');
-            auth.classList.remove('hidden');
-            authForm.reset();
+        // Emoji reaction functionality
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('emoji-reaction')) {
+                const currentText = e.target.textContent.trim();
+                const emoji = currentText.split(' ')[0];
+                const count = parseInt(currentText.split(' ')[1] || '0');
+                e.target.textContent = `${emoji} ${count + 1}`;
+            }
         });
 
-        // PWA Install Prompt
+        // PWA functionality
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
-            // Show install button after 5 seconds
-            setTimeout(() => {
-                if (deferredPrompt) {
-                    const installDiv = document.createElement('div');
-                    installDiv.className = 'fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-50';
-                    installDiv.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">GFZA</span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-800">Install GFZA Chat</p>
-                                <p class="text-xs text-gray-600">Add to your home screen</p>
-                            </div>
-                            <button id="installBtn" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Install</button>
-                            <button id="dismissBtn" class="text-gray-400 hover:text-gray-600">×</button>
-                        </div>
-                    `;
-                    document.body.appendChild(installDiv);
-                    
-                    document.getElementById('installBtn').addEventListener('click', () => {
-                        deferredPrompt.prompt();
-                        deferredPrompt.userChoice.then(() => {
-                            deferredPrompt = null;
-                            installDiv.remove();
-                        });
-                    });
-                    
-                    document.getElementById('dismissBtn').addEventListener('click', () => {
-                        installDiv.remove();
-                    });
-                }
-            }, 5000);
         });
     </script>
 </body>
