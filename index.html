@@ -1,427 +1,2729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GFZA Chat - Ghana Free Zones Authority</title>
-    <meta name="description" content="Official Team Communication Platform for Ghana Free Zones Authority">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GFZA Messenger</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="description" content="GFZA Messenger - Gateway to West Africa Communication Platform" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAyODgiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHJ4PSIxMiIgZmlsbD0iIzE2YTM0YSIvPjx0ZXh0IHg9IjM0IiB5PSI1MiIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R0ZaQTwvdGV4dD48L3N2Zz4=" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    .connection-status {
+      position: fixed; top: 10px; left: 10px; padding: 8px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; z-index: 2000; transition: all 0.3s ease;
+    }
+    .connection-status.connected { background: #10b981; color: white; }
+    .connection-status.disconnected { background: #ef4444; color: white; }
+    .connection-status.connecting { background: #f59e0b; color: white; }
     
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#059669">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="GFZA Chat">
+    .messenger-container {
+      position: fixed; bottom: 20px; right: 20px; width: min(450px, calc(100vw - 40px));
+      height: min(650px, calc(100vh - 40px)); background: white; border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 1000; display: flex;
+      flex-direction: column; overflow: hidden;
+    }
+    .messenger-minimized { height: 60px; width: min(300px, calc(100vw - 40px)); }
+    .messenger-minimized .messenger-content { display: none; }
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    .gfza-logo {
+      width: 80px; height: 80px; background: linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%);
+      border-radius: 16px; border: 4px solid #15803d; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: white; font-size: 24px; box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+      font-family: 'Arial Black', Arial, sans-serif; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .gfza-logo-small {
+      width: 32px; height: 32px; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: white; font-size: 12px; box-shadow: 0 3px 8px rgba(22, 163, 74, 0.3);
+      font-family: 'Arial Black', Arial, sans-serif; letter-spacing: 1px;
+    }
+    .deployment-ready { background: linear-gradient(135deg, #16a34a 0%, #059669 100%); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }
+    .gfza-text { font-family: 'Arial Black', Arial, sans-serif; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .gateway-text {
+      background: linear-gradient(45deg, #16a34a, #059669, #10b981);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;
+    }
+
+    /* Perfect layout structure */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Sticky channels header */
+    .channels-header-section {
+      flex-shrink: 0 !important;
+      background: #f9fafb !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      padding: 12px !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
+    }
+
+    .channels-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 12px !important;
+    }
+
+    .channels-title {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      color: #6b7280 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+    }
+
+    /* New group button */
+    .new-group-btn {
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 6px !important;
+      padding: 6px 12px !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      position: relative !important;
+      z-index: 101 !important;
+    }
+
+    .new-group-btn:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3) !important;
+    }
+
+    /* Channel info section */
+    .channel-info-section {
+      flex-shrink: 0 !important;
+      background: white !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      padding: 12px !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 99 !important;
+    }
+
+    /* Messages section */
+    .messages-section {
+      flex: 1 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 12px !important;
+      padding-bottom: 20px !important;
+      background: #f9fafb !important;
+      scroll-behavior: smooth !important;
+      scroll-padding-bottom: 20px !important;
+    }
+
+    /* Enhanced input bar */
+    .chat-input-bar {
+      flex-shrink: 0 !important;
+      background: white !important;
+      border-top: 2px solid #10b981 !important;
+      padding: 12px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+      position: relative !important;
+      z-index: 1000 !important;
+    }
     
-    <style>
-        .gfza-gradient {
-            background: linear-gradient(135deg, #059669 0%, #dc2626 100%);
-        }
-        .sidebar-gradient {
-            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-        }
-        .message-bubble {
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .emoji-reaction {
-            transition: all 0.2s ease;
-        }
-        .emoji-reaction:hover {
-            transform: scale(1.1);
-        }
-        .online-indicator {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-    </style>
+    .chat-input {
+      flex: 1 !important;
+      border: 1px solid #d1d5db !important;
+      border-radius: 6px !important;
+      padding: 8px 12px !important;
+      font-size: 14px !important;
+      outline: none !important;
+      background: white !important;
+      resize: none !important;
+      max-height: 80px !important;
+    }
+    
+    .chat-input:focus {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    
+    .input-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .action-btn {
+      background: #f3f4f6;
+      border: none;
+      border-radius: 6px;
+      padding: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .action-btn:hover {
+      background: #e5e7eb;
+    }
+    
+    .chat-send-btn {
+      background: #10b981 !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 6px !important;
+      padding: 8px 16px !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: background 0.2s !important;
+    }
+    
+    .chat-send-btn:hover {
+      background: #059669 !important;
+    }
+
+    .chat-send-btn:disabled {
+      background: #9ca3af !important;
+      cursor: not-allowed !important;
+    }
+
+    /* Enhanced message styling */
+    .message-item {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+      animation: messageSlideIn 0.3s ease-out;
+      position: relative;
+    }
+
+    @keyframes messageSlideIn {
+      from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
+    }
+
+    .message-item.sent {
+      align-items: flex-end;
+    }
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      word-wrap: break-word;
+      line-height: 1.4;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .message-bubble:hover .message-actions {
+      opacity: 1;
+    }
+
+    .message-bubble.sent {
+      background: #10b981;
+      color: white;
+    }
+
+    .message-bubble.received {
+      background: white;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .message-bubble.reply {
+      border-left: 4px solid #10b981;
+      padding-left: 12px;
+    }
+
+    .reply-to {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 4px;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 4px;
+    }
+
+    .message-meta {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .message-actions {
+      position: absolute;
+      top: -15px;
+      right: 10px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .message-action {
+      background: none;
+      border: none;
+      padding: 4px 6px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .message-action:hover {
+      background: #f3f4f6;
+    }
+
+    .message-reactions {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .reaction {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reaction:hover {
+      background: #e5e7eb;
+    }
+
+    .reaction.active {
+      background: #dbeafe;
+      border-color: #3b82f6;
+    }
+
+    .message-status { font-size: 10px; color: #6b7280; margin-left: 4px; }
+    .message-status.sending { color: #f59e0b; }
+    .message-status.sent { color: #6b7280; }
+    .message-status.delivered { color: #10b981; }
+    .message-status.failed { color: #ef4444; }
+
+    /* File attachment styling */
+    .file-attachment {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      background: #10b981;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .file-size {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    /* Emoji picker */
+    .emoji-picker {
+      position: absolute;
+      bottom: 60px;
+      right: 60px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      padding: 12px;
+      width: 280px;
+      height: 200px;
+      overflow-y: auto;
+      z-index: 1001;
+      display: none;
+    }
+
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+
+    .emoji-item {
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 18px;
+      transition: background 0.2s;
+    }
+
+    .emoji-item:hover {
+      background: #f3f4f6;
+    }
+
+    /* Profile management */
+    .profile-picture {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-picture img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-upload {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 16px;
+      height: 16px;
+      background: #059669;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    /* MOVED: Profile buttons styling */
+    .profile-action-btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      outline: none;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .install-profile-btn {
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .install-profile-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+    }
+
+    .notification-profile-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .notification-profile-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+    }
+
+    .notification-profile-btn.enabled {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Enhanced Group creation modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: min(500px, calc(100vw - 40px));
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* User selection for groups */
+    .user-selection {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f9fafb;
+    }
+
+    .user-checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .user-checkbox-item:hover {
+      background: #f3f4f6;
+    }
+
+    .user-checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .user-department {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .user-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: auto;
+    }
+
+    .user-status.online { background: #10b981; }
+    .user-status.offline { background: #6b7280; }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      outline: none;
+    }
+
+    .btn-secondary {
+      background: #f9fafb;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #f3f4f6;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Enhanced channel styling */
+    .channel-btn {
+      position: relative;
+      transition: all 0.2s;
+      display: block !important;
+      width: 100% !important;
+      text-align: left !important;
+      padding: 8px 12px !important;
+      border-radius: 6px !important;
+      font-size: 12px !important;
+      background: transparent !important;
+      border: none !important;
+      cursor: pointer !important;
+      color: #374151 !important;
+    }
+
+    .channel-btn:hover {
+      background: #f3f4f6 !important;
+      transform: translateX(2px);
+    }
+
+    .channel-btn.active {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;
+      border-left: 3px solid #16a34a !important;
+      font-weight: 600 !important;
+      color: #166534 !important;
+    }
+
+    .scroll-anchor {
+      height: 1px;
+      width: 100%;
+      background: transparent;
+    }
+
+    .scroll-btn {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 999;
+      font-size: 20px;
+      transition: all 0.3s ease;
+      opacity: 0.9;
+    }
+
+    .scroll-btn:hover {
+      background: #059669;
+      transform: scale(1.1);
+      opacity: 1;
+    }
+
+    /* Notification Toast */
+    .notification-toast {
+      position: fixed;
+      top: 100px;
+      right: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      padding: 16px;
+      width: min(350px, calc(100vw - 40px));
+      z-index: 2002;
+      border-left: 4px solid #10b981;
+      animation: slideInRight 0.3s ease-out;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .notification-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .notification-icon {
+      width: 24px;
+      height: 24px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .notification-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      flex: 1;
+    }
+
+    .notification-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px;
+    }
+
+    .notification-body {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.4;
+    }
+
+    .notification-time {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .messenger-container { width: calc(100vw - 20px); height: calc(100vh - 20px); bottom: 10px; right: 10px; }
+      .emoji-picker { width: 240px; height: 160px; }
+      .modal-content { width: calc(100vw - 20px); padding: 20px; }
+      .notification-toast { width: calc(100vw - 20px); right: 10px; }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 h-screen overflow-hidden">
-    <!-- Main Container -->
-    <div class="flex h-full">
-        <!-- Left Sidebar -->
-        <div class="w-80 sidebar-gradient border-r border-gray-200 flex flex-col">
-            <!-- Header -->
-            <div class="p-4 border-b border-gray-200">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 gfza-gradient rounded-lg flex items-center justify-center shadow-lg">
-                        <span class="text-white font-bold text-sm">GFZA</span>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-gray-800">GFZA Chat</h1>
-                        <p class="text-sm text-gray-600">Ghana Free Zones Authority</p>
-                    </div>
-                </div>
-            </div>
+<body class="bg-gray-100 font-sans">
 
-            <!-- User Profile -->
-            <div class="p-4 border-b border-gray-200">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span class="text-white text-sm font-semibold">MB</span>
-                    </div>
-                    <div class="flex-1">
-                        <p class="font-medium text-gray-800">Mohammed Bukari</p>
-                        <p class="text-xs text-gray-500">MIS</p>
-                    </div>
-                    <div class="w-3 h-3 bg-green-500 rounded-full online-indicator"></div>
-                </div>
-            </div>
+  <div id="connectionStatus" class="connection-status connecting">🔄 Connecting...</div>
 
-            <!-- Channels -->
-            <div class="flex-1 overflow-y-auto">
-                <div class="p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Channels</h3>
-                        <button class="text-gray-400 hover:text-gray-600">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-1">
-                        <div class="flex items-center space-x-2 p-2 rounded-lg bg-blue-100 text-blue-800 cursor-pointer">
-                            <span class="text-sm">#</span>
-                            <span class="text-sm font-medium">General</span>
-                            <div class="flex items-center space-x-1 ml-auto">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="text-xs">5</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <span class="text-sm text-gray-500">#</span>
-                            <span class="text-sm text-gray-700">HR Team</span>
-                            <div class="flex items-center space-x-1 ml-auto">
-                                <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="text-xs text-gray-400">1</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <span class="text-sm text-gray-500">#</span>
-                            <span class="text-sm text-gray-700">Accounts</span>
-                            <div class="flex items-center space-x-1 ml-auto">
-                                <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="text-xs text-gray-400">1</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <span class="text-sm text-gray-500">#</span>
-                            <span class="text-sm text-gray-700">Operations</span>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <span class="text-sm text-gray-500">#</span>
-                            <span class="text-sm text-gray-700">Legal</span>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                            <span class="text-sm text-gray-500">#</span>
-                            <span class="text-sm text-gray-700">Finance</span>
-                        </div>
-                    </div>
-                </div>
+  <div id="authContainer" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white shadow-xl rounded-xl p-6">
+      <div class="flex flex-col items-center mb-6">
+        <div class="gfza-logo mb-4"><span class="gfza-text">GFZA</span></div>
+        <h1 class="text-2xl font-bold text-gray-800">GFZA Messenger</h1>
+        <p class="text-sm gateway-text font-semibold">Gateway to West Africa</p>
+      </div>
 
-                <!-- Online Users -->
-                <div class="p-4 border-t border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Online Users</h3>
-                    <div class="space-y-2">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-xs font-semibold">JD</span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-800">John Doe</p>
-                                <p class="text-xs text-gray-500">HR</p>
-                            </div>
-                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-xs font-semibold">SJ</span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-800">Sarah Johnson</p>
-                                <p class="text-xs text-gray-500">ACCOUNTS</p>
-                            </div>
-                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-xs font-semibold">AK</span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-800">Alex Kwame</p>
-                                <p class="text-xs text-gray-500">OPERATIONS</p>
-                            </div>
-                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="flex mb-6 border-b">
+        <button id="loginTab" class="w-1/2 text-center py-2 border-b-2 border-blue-500 font-semibold text-blue-600">Login</button>
+        <button id="signupTab" class="w-1/2 text-center py-2 border-b-2 border-transparent font-semibold text-gray-500 hover:text-blue-600">Signup</button>
+      </div>
 
-            <!-- Footer -->
-            <div class="p-4 border-t border-gray-200 bg-white">
-                <div class="text-center">
-                    <p class="text-xs text-gray-500">Developed by GFZA MIS</p>
-                    <p class="text-xs text-gray-400">© 2025 Ghana Free Zones Authority</p>
-                </div>
-            </div>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">GFZA Email</label>
+          <input id="loginEmail" type="email" placeholder="you@gfza.gov.gh" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
         </div>
-
-        <!-- Main Chat Area -->
-        <div class="flex-1 flex flex-col">
-            <!-- Chat Header -->
-            <div class="bg-white border-b border-gray-200 p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xl">#</span>
-                            <h2 class="text-lg font-semibold text-gray-800">General</h2>
-                        </div>
-                        <div class="flex items-center space-x-1 text-gray-500">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span class="text-sm">5 members</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-3">
-                        <button class="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
-                            </svg>
-                            <span class="text-sm font-medium">Call</span>
-                        </button>
-                        
-                        <button class="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
-                            </svg>
-                            <span class="text-sm font-medium">Video</span>
-                        </button>
-                        
-                        <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Messages Area -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messagesContainer">
-                <!-- System Message -->
-                <div class="message-bubble">
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                            <span class="text-white text-xs font-bold">S</span>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-1">
-                                <span class="font-medium text-gray-800">System</span>
-                                <span class="text-xs text-gray-500">10:23 PM</span>
-                            </div>
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <p class="text-sm text-blue-800">Welcome to GFZA Chat Base! 🎉 This is your secure internal communication platform.</p>
-                                <div class="flex items-center space-x-2 mt-2">
-                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
-                                        👍 2
-                                    </button>
-                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
-                                        🎉 1
-                                    </button>
-                                    <button class="emoji-reaction bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs hover:bg-red-200">
-                                        ❤️ 1
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Message 2 -->
-                <div class="message-bubble">
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                            <span class="text-white text-xs font-bold">S</span>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-1">
-                                <span class="font-medium text-gray-800">System</span>
-                                <span class="text-xs text-gray-500">10:24 PM</span>
-                            </div>
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <p class="text-sm text-green-800">Feel free to start chatting with your colleagues. All conversations are encrypted and secure.</p>
-                                <div class="flex items-center space-x-2 mt-2">
-                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
-                                        👍 2
-                                    </button>
-                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
-                                        🎉 1
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Message Input -->
-            <div class="bg-white border-t border-gray-200 p-4">
-                <div class="flex items-center space-x-3">
-                    <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"></path>
-                        </svg>
-                    </button>
-                    
-                    <div class="flex-1 relative">
-                        <input 
-                            type="text" 
-                            id="messageInput"
-                            placeholder="Message # General"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                        >
-                    </div>
-                    
-                    <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zM9 9a1 1 0 100-2 1 1 0 000 2zm4 0a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
-                        </svg>
-                    </button>
-                    
-                    <button 
-                        id="sendBtn"
-                        class="gfza-gradient text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium"
-                    >
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <input id="loginPassword" type="password" placeholder="********" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
         </div>
+        <button type="submit" class="w-full deployment-ready text-white py-2 rounded-lg hover:opacity-90 transition-opacity font-medium">
+          Login to GFZA Messenger
+        </button>
+      </form>
+
+      <form id="signupForm" class="space-y-4 hidden">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <input id="signupName" type="text" placeholder="First Name" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Surname</label>
+          <input id="signupSurname" type="text" placeholder="Last Name" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Department</label>
+          <select id="signupDepartment" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required>
+            <option value="">Select Department</option>
+            <option value="HR">HR</option>
+            <option value="BDR">BDR</option>
+            <option value="MIS">MIS</option>
+            <option value="MONITORING">MONITORING</option>
+            <option value="CORPORATE">CORPORATE</option>
+            <option value="ACCOUNTS">ACCOUNTS</option>
+            <option value="COMPLIANCE">COMPLIANCE</option>
+            <option value="TRANSPORT">TRANSPORT</option>
+            <option value="ADMINISTRATION">ADMINISTRATION</option>
+            <option value="CEO">CEO</option>
+            <option value="DEPT CEO FINANCE">DEPT CEO FINANCE</option>
+            <option value="DEPT CEO OPERATION">DEPT CEO OPERATION</option>
+            <option value="IMMIGRATION">IMMIGRATION</option>
+            <option value="ESTATE">ESTATE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">GFZA Email</label>
+          <input id="signupEmail" type="email" placeholder="you@gfza.gov.gh" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Password</label>
+          <input id="signupPassword" type="password" placeholder="********" 
+            class="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-green-300" required />
+        </div>
+        <button type="submit" class="w-full deployment-ready text-white py-2 rounded-lg hover:opacity-90 transition-opacity font-medium">
+          Join GFZA Messenger
+        </button>
+      </form>
+
+      <!-- Clean footer credit in auth container -->
+      <div class="text-center mt-6 pt-4 border-t border-gray-200">
+        <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+          <div class="w-4 h-4 bg-green-600 rounded text-white flex items-center justify-center font-bold text-xs">G</div>
+          <span>Developed by <strong class="text-green-600">GFZAMIS</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="messengerWidget" class="hidden messenger-container">
+    <div class="deployment-ready text-white px-4 py-3 flex items-center justify-between border-b">
+      <div class="flex items-center gap-2">
+        <div class="gfza-logo-small"><span class="gfza-text">G</span></div>
+        <span class="font-semibold text-sm">GFZA Chat</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="minimizeBtn" class="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded text-sm">−</button>
+        <button onclick="logout()" class="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded text-sm">Logout</button>
+      </div>
     </div>
 
-    <script>
-        // Message functionality
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const messagesContainer = document.getElementById('messagesContainer');
+    <div class="main-content">
+      <div class="flex border-b bg-gray-50" style="z-index: 100; position: relative;">
+        <button id="channelsTab" class="flex-1 py-2 px-3 text-xs font-medium bg-white border-b-2 border-green-500 text-green-600">Groups</button>
+        <button id="directTab" class="flex-1 py-2 px-3 text-xs font-medium text-gray-500 hover:text-green-600">Direct</button>
+        <button id="profileTab" class="flex-1 py-2 px-3 text-xs font-medium text-gray-500 hover:text-green-600">Profile</button>
+      </div>
 
-        function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
+      <div class="content-area">
+        <div id="channelsView" class="flex-1 flex flex-col">
+          <!-- Sticky channels header -->
+          <div class="channels-header-section">
+            <div class="channels-header">
+              <div class="channels-title">
+                🏢 GFZA Channels
+              </div>
+              <button onclick="showCreateGroupModal()" class="new-group-btn" id="newGroupBtn">
+                ➕ New Group
+              </button>
+            </div>
+            <div class="space-y-1" id="channelsList">
+              <button onclick="switchChannel('General')" class="channel-btn active"># General</button>
+              <button onclick="switchChannel('HR Updates')" class="channel-btn"># HR Updates</button>
+              <button onclick="switchChannel('Finance')" class="channel-btn"># Finance</button>
+            </div>
+          </div>
 
-            // Add user message
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message-bubble';
-            messageDiv.innerHTML = `
-                <div class="flex items-start space-x-3">
-                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span class="text-white text-xs font-bold">MB</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-2 mb-1">
-                            <span class="font-medium text-gray-800">Mohammed Bukari</span>
-                            <span class="text-xs text-gray-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div class="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                            <p class="text-sm text-gray-800">${text}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            messagesContainer.appendChild(messageDiv);
-            messageInput.value = '';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          <!-- Channel info section -->
+          <div class="channel-info-section">
+            <span class="font-semibold text-sm" id="currentChannel"># General</span>
+            <span class="text-xs text-gray-500 ml-2" id="channelMemberCount">3 members</span>
+          </div>
 
-            // Simulate response
-            setTimeout(() => {
-                const responses = [
-                    "Thank you for your message! The relevant GFZA department will respond shortly.",
-                    "Message received and forwarded to the appropriate team at Ghana Free Zones Authority.",
-                    "We appreciate your communication. How else can GFZA assist you today?",
-                    "Your inquiry is being processed by our team. We'll get back to you soon.",
-                    "Thank you for reaching out to GFZA. Our team is reviewing your request."
-                ];
-                
-                const responseDiv = document.createElement('div');
-                responseDiv.className = 'message-bubble';
-                responseDiv.innerHTML = `
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 gfza-gradient rounded-full flex items-center justify-center">
-                            <span class="text-white text-xs font-bold">G</span>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-1">
-                                <span class="font-medium text-gray-800">GFZA Bot</span>
-                                <span class="text-xs text-gray-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </div>
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <p class="text-sm text-green-800">${responses[Math.floor(Math.random() * responses.length)]}</p>
-                                <div class="flex items-center space-x-2 mt-2">
-                                    <button class="emoji-reaction bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs hover:bg-yellow-200">
-                                        👍
-                                    </button>
-                                    <button class="emoji-reaction bg-pink-100 text-pink-600 px-2 py-1 rounded-full text-xs hover:bg-pink-200">
-                                        ❤️
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                messagesContainer.appendChild(responseDiv);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 1500);
+          <!-- Messages section -->
+          <div class="messages-section" id="messagesArea">
+            <div class="text-center text-gray-500 py-4">
+              <p class="text-xs font-medium">Welcome to GFZA Messenger!</p>
+              <p class="text-xs text-gray-400">Professional communication platform</p>
+            </div>
+            <div id="messagesScrollAnchor" class="scroll-anchor"></div>
+          </div>
+        </div>
+
+        <div id="directView" class="hidden flex-1 flex flex-col">
+          <div class="channels-header-section">
+            <div class="channels-header">
+              <div class="channels-title">
+                💬 Direct Messages
+              </div>
+            </div>
+            <div class="space-y-1" id="usersList">
+            </div>
+          </div>
+
+          <div class="channel-info-section">
+            <span class="font-semibold text-sm" id="currentDirectChat">Select a user to chat</span>
+          </div>
+
+          <div class="messages-section" id="directMessagesArea">
+            <div class="text-center text-gray-500 py-4">
+              <p class="text-xs">Select a user to start chatting</p>
+              <p class="text-xs text-gray-400">Professional communication platform</p>
+            </div>
+            <div id="directScrollAnchor" class="scroll-anchor"></div>
+          </div>
+        </div>
+
+        <div id="profileView" class="hidden flex-1 p-4">
+          <div class="text-center mb-4">
+            <div class="profile-picture mx-auto mb-2" onclick="uploadProfilePicture()">
+              <span id="profileInitials">--</span>
+              <div class="profile-upload">📷</div>
+              <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="handleProfilePictureUpload(event)">
+            </div>
+            <h3 class="font-semibold text-sm" id="profileName">Loading...</h3>
+            <p class="text-gray-500 text-xs" id="profileEmail">Loading...</p>
+            <p class="text-gray-500 text-xs" id="profileDepartment">Loading...</p>
+          </div>
+          
+          <!-- MOVED: Install and Notification buttons to Profile -->
+          <div class="mb-4">
+            <button id="installBtn" class="profile-action-btn install-profile-btn">
+              📱 Install App
+            </button>
+            <button id="notificationBtn" class="profile-action-btn notification-profile-btn">
+              🔔 Enable Notifications
+            </button>
+          </div>
+          
+          <!-- Clean footer credit in profile view -->
+          <div class="text-center mt-6 pt-4 border-t border-gray-200">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+              <div class="w-4 h-4 bg-green-600 rounded text-white flex items-center justify-center font-bold text-xs">G</div>
+              <span>Developed by <strong class="text-green-600">GFZAMIS</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced input bar -->
+      <div class="chat-input-bar">
+        <div class="input-actions">
+          <button class="action-btn" onclick="toggleEmojiPicker()" title="Add emoji">😊</button>
+          <button class="action-btn" onclick="uploadFile()" title="Attach file">📎</button>
+          <input type="file" id="fileInput" multiple style="display: none;" onchange="handleFileUpload(event)">
+        </div>
+        <textarea id="messageInput" placeholder="Type your message..." class="chat-input" rows="1" onkeydown="handleInputKeydown(event)"></textarea>
+        <button id="sendBtn" onclick="sendMessage()" class="chat-send-btn">Send</button>
+      </div>
+
+      <!-- Manual scroll button -->
+      <button id="scrollBtn" class="scroll-btn" onclick="forceScrollToBottom()" title="Scroll to bottom">↓</button>
+    </div>
+  </div>
+
+  <!-- Emoji picker -->
+  <div id="emojiPicker" class="emoji-picker">
+    <div class="emoji-grid" id="emojiGrid">
+      <!-- Emojis will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <!-- Enhanced create group modal with user selection -->
+  <div id="createGroupModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          🏢 Create New GFZA Group
+        </h3>
+        <button onclick="hideCreateGroupModal()" class="close-btn">×</button>
+      </div>
+      
+      <form id="createGroupForm">
+        <div class="form-group">
+          <label class="form-label">Group Name *</label>
+          <input id="groupName" type="text" placeholder="e.g., Marketing Team, Project Alpha" 
+            class="form-input" required maxlength="50" />
+          <div class="text-xs text-gray-500 mt-1">Maximum 50 characters</div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="groupDescription" placeholder="Brief description of the group's purpose..." 
+            class="form-input form-textarea" maxlength="200"></textarea>
+          <div class="text-xs text-gray-500 mt-1">Optional - Maximum 200 characters</div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Group Type</label>
+          <select id="groupType" class="form-input">
+            <option value="public">🌐 Public - Anyone can join</option>
+            <option value="private">🔒 Private - Invite only</option>
+            <option value="department">🏢 Department - Department members only</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Department (for department groups)</label>
+          <select id="groupDepartment" class="form-input">
+            <option value="">Select Department</option>
+            <option value="HR">HR</option>
+            <option value="BDR">BDR</option>
+            <option value="MIS">MIS</option>
+            <option value="MONITORING">MONITORING</option>
+            <option value="CORPORATE">CORPORATE</option>
+            <option value="ACCOUNTS">ACCOUNTS</option>
+            <option value="COMPLIANCE">COMPLIANCE</option>
+            <option value="TRANSPORT">TRANSPORT</option>
+            <option value="ADMINISTRATION">ADMINISTRATION</option>
+            <option value="CEO">CEO</option>
+            <option value="DEPT CEO FINANCE">DEPT CEO FINANCE</option>
+            <option value="DEPT CEO OPERATION">DEPT CEO OPERATION</option>
+            <option value="IMMIGRATION">IMMIGRATION</option>
+            <option value="ESTATE">ESTATE</option>
+          </select>
+        </div>
+        
+        <!-- User Selection Section -->
+        <div class="form-group">
+          <label class="form-label">Add Members to Group</label>
+          <div class="user-selection" id="userSelectionList">
+            <div class="text-center text-gray-500 py-4 text-sm">
+              Loading users...
+            </div>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">
+            <span id="selectedUsersCount">0</span> users selected
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button type="button" onclick="hideCreateGroupModal()" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" id="createGroupBtn">
+            🚀 Create Group
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://zgjlbeuigbvomshdwear.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnamxiZXVpZ2J2b21zaGR3ZWFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA4OTksImV4cCI6MjA3NDI5Njg5OX0.tU2kYJQMxY24saKbTtEz1px1Dd1CKB5kNqOt3lcUJTA';
+    
+    let supabase;
+    let currentUser = null;
+    let currentChannel = 'General';
+    let currentDirectUser = '';
+    let currentView = 'channels';
+    let messages = { 'General': [], 'HR Updates': [], 'Finance': [] };
+    let directMessages = {};
+    let allUsers = [];
+    let channels = [
+      { name: 'General', type: 'public', description: 'General discussions for all GFZA staff', memberCount: 3 },
+      { name: 'HR Updates', type: 'department', description: 'HR announcements and updates', memberCount: 2 },
+      { name: 'Finance', type: 'department', description: 'Financial discussions and reports', memberCount: 2 }
+    ];
+    let messageIdCounter = 0;
+    let messageSubscription = null;
+    let directMessageSubscription = null;
+    let presenceHeartbeat = null;
+    let replyingTo = null;
+    let selectedUsers = new Set();
+    let deferredPrompt = null;
+    let notificationPermission = 'default';
+    let isAppFocused = true;
+    let notificationsEnabled = false;
+
+    // Enhanced Service Worker with proper PWA manifest
+    const manifest = {
+      name: "GFZA Messenger",
+      short_name: "GFZA Chat",
+      description: "GFZA Messenger - Gateway to West Africa Communication Platform",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#f9fafb",
+      theme_color: "#16a34a",
+      icons: [
+        {
+          src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAyODgiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHJ4PSIxMiIgZmlsbD0iIzE2YTM0YSIvPjx0ZXh0IHg9IjM0IiB5PSI1MiIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R0ZaQTwvdGV4dD48L3N2Zz4=",
+          sizes: "128x128",
+          type: "image/svg+xml"
+        },
+        {
+          src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNjQiIHk9IjY0IiB3aWR0aD0iMzg0IiBoZWlnaHQ9IjM4NCIgcng9IjQ4IiBmaWxsPSIjMTZhMzRhIi8+PHRleHQgeD0iMTI4IiB5PSIyNTYiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2siIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iNjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdGWkE8L3RleHQ+PC9zdmc+",
+          sizes: "512x512",
+          type: "image/svg+xml"
+        }
+      ]
+    };
+
+    // Create and inject manifest
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+
+    // Enhanced Service Worker with proper push notifications
+    const serviceWorkerCode = `
+      const CACHE_NAME = 'gfza-messenger-clean-v1';
+      const urlsToCache = ['/'];
+
+      self.addEventListener('install', event => {
+        event.waitUntil(
+          caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
+        );
+        self.skipWaiting();
+      });
+
+      self.addEventListener('activate', event => {
+        event.waitUntil(
+          caches.keys().then(cacheNames => {
+            return Promise.all(
+              cacheNames.map(cacheName => {
+                if (cacheName !== CACHE_NAME) {
+                  return caches.delete(cacheName);
+                }
+              })
+            );
+          })
+        );
+        self.clients.claim();
+      });
+
+      self.addEventListener('fetch', event => {
+        event.respondWith(
+          caches.match(event.request)
+            .then(response => {
+              if (response) {
+                return response;
+              }
+              return fetch(event.request);
+            })
+        );
+      });
+
+      // Push notification handler
+      self.addEventListener('push', event => {
+        let data = {};
+        
+        if (event.data) {
+          try {
+            data = event.data.json();
+          } catch (e) {
+            data = { title: 'GFZA Messenger', body: event.data.text() || 'New message received' };
+          }
         }
 
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // Emoji reaction functionality
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('emoji-reaction')) {
-                const currentText = e.target.textContent.trim();
-                const emoji = currentText.split(' ')[0];
-                const count = parseInt(currentText.split(' ')[1] || '0');
-                e.target.textContent = `${emoji} ${count + 1}`;
+        const options = {
+          body: data.body || 'New message received',
+          icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAyODgiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHJ4PSIxMiIgZmlsbD0iIzE2YTM0YSIvPjx0ZXh0IHg9IjM0IiB5PSI1MiIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R0ZaQTwvdGV4dD48L3N2Zz4=',
+          badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNjQiIHk9IjY0IiB3aWR0aD0iMzg0IiBoZWlnaHQ9IjM4NCIgcng9IjQ4IiBmaWxsPSIjMTZhMzRhIi8+PHRleHQgeD0iMTI4IiB5PSIyNTYiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2siIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iNjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdGWkE8L3RleHQ+PC9zdmc+',
+          tag: data.tag || 'gfza-message',
+          requireInteraction: false,
+          silent: false,
+          timestamp: Date.now(),
+          data: data.data || {},
+          actions: [
+            {
+              action: 'reply',
+              title: 'Reply'
+            },
+            {
+              action: 'view',
+              title: 'View'
             }
+          ]
+        };
+
+        event.waitUntil(
+          self.registration.showNotification(data.title || 'GFZA Messenger', options)
+        );
+      });
+
+      // Notification click handler
+      self.addEventListener('notificationclick', event => {
+        event.notification.close();
+
+        const action = event.action;
+
+        event.waitUntil(
+          clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            // If app is already open, focus it
+            for (const client of clientList) {
+              if (client.url.includes(location.origin)) {
+                return client.focus();
+              }
+            }
+            // Otherwise open new window
+            return clients.openWindow('/');
+          })
+        );
+      });
+    `;
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      const swBlob = new Blob([serviceWorkerCode], { type: 'application/javascript' });
+      const swURL = URL.createObjectURL(swBlob);
+      
+      navigator.serviceWorker.register(swURL)
+        .then(registration => {
+          console.log('Service Worker registered successfully');
+          
+          registration.ready.then(() => {
+            checkNotificationPermission();
+          });
+        })
+        .catch(error => {
+          console.log('Service Worker registration failed:', error);
+        });
+    }
+
+    // App focus detection for real-time notifications
+    window.addEventListener('focus', () => {
+      isAppFocused = true;
+      console.log('App focused - notifications will be suppressed');
+    });
+
+    window.addEventListener('blur', () => {
+      isAppFocused = false;
+      console.log('App blurred - notifications will be shown');
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      isAppFocused = !document.hidden;
+      console.log('Visibility changed - App focused:', isAppFocused);
+    });
+
+    // Notification functions
+    async function checkNotificationPermission() {
+      if (!('Notification' in window)) {
+        console.log('This browser does not support notifications');
+        return;
+      }
+
+      notificationPermission = Notification.permission;
+      updateNotificationButton();
+    }
+
+    function updateNotificationButton() {
+      const btn = document.getElementById('notificationBtn');
+      if (!btn) return;
+
+      if (notificationPermission === 'granted') {
+        btn.classList.add('enabled');
+        btn.innerHTML = '🔔 Notifications On';
+        notificationsEnabled = true;
+      } else if (notificationPermission === 'denied') {
+        btn.classList.remove('enabled');
+        btn.innerHTML = '🔕 Notifications Blocked';
+        notificationsEnabled = false;
+      } else {
+        btn.classList.remove('enabled');
+        btn.innerHTML = '🔔 Enable Notifications';
+        notificationsEnabled = false;
+      }
+    }
+
+    async function requestNotificationPermission() {
+      if (!('Notification' in window)) {
+        showNotificationToast('❌ Notifications Not Supported', 'Your browser does not support notifications.');
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        notificationPermission = permission;
+
+        if (permission === 'granted') {
+          notificationsEnabled = true;
+          showNotificationToast('✅ Notifications Enabled!', 'You will now receive push notifications for new messages.');
+          
+          // Show test notification
+          setTimeout(() => {
+            showPushNotification('🎉 GFZA Messenger', 'Notifications are now working!');
+          }, 1000);
+        } else {
+          notificationsEnabled = false;
+          showNotificationToast('⚠️ Notifications Denied', 'You can enable them later in your browser settings.');
+        }
+        
+        updateNotificationButton();
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+        showNotificationToast('❌ Permission Error', 'Failed to request notification permission.');
+      }
+    }
+
+    // Show push notification with proper focus detection
+    function showPushNotification(title, body, options = {}) {
+      // Only show notifications when app is not focused
+      if (isAppFocused || !notificationsEnabled || notificationPermission !== 'granted') {
+        console.log('Notification suppressed - App focused:', isAppFocused, 'Enabled:', notificationsEnabled, 'Permission:', notificationPermission);
+        return;
+      }
+
+      try {
+        const notification = new Notification(title, {
+          body: body,
+          icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAyODgiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHJ4PSIxMiIgZmlsbD0iIzE2YTM0YSIvPjx0ZXh0IHg9IjM0IiB5PSI1MiIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R0ZaQTwvdGV4dD48L3N2Zz4=',
+          badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9IiMxNmEzNGEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNjQiIHk9IjY0IiB3aWR0aD0iMzg0IiBoZWlnaHQ9IjM4NCIgcng9IjQ4IiBmaWxsPSIjMTZhMzRhIi8+PHRleHQgeD0iMTI4IiB5PSIyNTYiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2siIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iNjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdGWkE8L3RleHQ+PC9zdmc+',
+          tag: 'gfza-message',
+          requireInteraction: false,
+          silent: false,
+          ...options
         });
 
-        // PWA functionality
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+        notification.onclick = function() {
+          window.focus();
+          notification.close();
+        };
+
+        // Auto close after 5 seconds
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+
+        console.log('Push notification shown:', title);
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
+    }
+
+    // Show in-app notification toast
+    function showNotificationToast(title, body) {
+      // Remove existing toasts
+      document.querySelectorAll('.notification-toast').forEach(toast => toast.remove());
+
+      const toast = document.createElement('div');
+      toast.className = 'notification-toast';
+      
+      toast.innerHTML = `
+        <div class="notification-header">
+          <div class="notification-icon">🔔</div>
+          <div class="notification-title">${title}</div>
+          <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+        <div class="notification-body">${body}</div>
+        <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+      `;
+
+      document.body.appendChild(toast);
+
+      // Auto remove after 4 seconds
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 4000);
+    }
+
+    // PWA Install prompt handling
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('Install prompt available');
+    });
+
+    document.getElementById('installBtn').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        try {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+            showNotificationToast('✅ App Installed!', 'GFZA Messenger has been installed successfully.');
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          deferredPrompt = null;
+        } catch (error) {
+          console.error('Install prompt error:', error);
+          showNotificationToast('❌ Install Failed', 'Could not install the app. Please try again.');
+        }
+      } else {
+        showNotificationToast('ℹ️ Install Not Available', 'App installation is not available or already installed.');
+      }
+    });
+
+    // Notification button click handler
+    document.getElementById('notificationBtn').addEventListener('click', requestNotificationPermission);
+
+    // Emoji data
+    const emojis = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','👋','🤚','🖐️','✋','🖖','👌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','👊','✊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','💋','🩸'];
+
+    // Initialize emoji picker
+    function initializeEmojiPicker() {
+      const emojiGrid = document.getElementById('emojiGrid');
+      emojiGrid.innerHTML = emojis.map(emoji => 
+        `<div class="emoji-item" onclick="insertEmoji('${emoji}')">${emoji}</div>`
+      ).join('');
+    }
+
+    function toggleEmojiPicker() {
+      const picker = document.getElementById('emojiPicker');
+      picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function insertEmoji(emoji) {
+      const input = document.getElementById('messageInput');
+      const cursorPos = input.selectionStart;
+      const textBefore = input.value.substring(0, cursorPos);
+      const textAfter = input.value.substring(input.selectionEnd);
+      input.value = textBefore + emoji + textAfter;
+      input.focus();
+      input.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+      toggleEmojiPicker();
+    }
+
+    // File upload functionality
+    function uploadFile() {
+      document.getElementById('fileInput').click();
+    }
+
+    function handleFileUpload(event) {
+      const files = Array.from(event.target.files);
+      files.forEach(file => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+          return;
+        }
+        sendFileMessage(file);
+      });
+      event.target.value = '';
+    }
+
+    async function sendFileMessage(file) {
+      const messageId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const senderName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+      
+      const newMessage = {
+        id: messageId,
+        user: 'You',
+        message: '',
+        file: {
+          name: file.name,
+          size: formatFileSize(file.size),
+          type: file.type,
+          url: URL.createObjectURL(file)
+        },
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        status: 'sending'
+      };
+
+      if (currentView === 'channels') {
+        if (!messages[currentChannel]) {
+          messages[currentChannel] = [];
+        }
+        messages[currentChannel].push(newMessage);
+        renderMessages();
+      } else if (currentView === 'direct' && currentDirectUser) {
+        if (!directMessages[currentDirectUser]) {
+          directMessages[currentDirectUser] = [];
+        }
+        directMessages[currentDirectUser].push(newMessage);
+        renderDirectMessages();
+      }
+
+      perfectScrollToBottom();
+      
+      setTimeout(() => {
+        updateMessageStatus(messageId, 'delivered');
+      }, 1000);
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Profile picture upload
+    function uploadProfilePicture() {
+      document.getElementById('profilePictureInput').click();
+    }
+
+    function handleProfilePictureUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          alert('Profile picture must be smaller than 5MB.');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const profilePicture = document.querySelector('.profile-picture');
+          profilePicture.innerHTML = `<img src="${e.target.result}" alt="Profile">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // User selection functions for group creation
+    function loadUsersForGroupCreation() {
+      const userSelectionList = document.getElementById('userSelectionList');
+      
+      if (allUsers.length === 0) {
+        userSelectionList.innerHTML = '<div class="text-center text-gray-500 py-4 text-sm">No other users found. Invite colleagues to join GFZA Messenger!</div>';
+        return;
+      }
+
+      userSelectionList.innerHTML = allUsers.map(user => {
+        const isOnline = user.status === 'online';
+        
+        return `
+          <div class="user-checkbox-item" onclick="toggleUserSelection('${user.id}')">
+            <input type="checkbox" id="user_${user.id}" onchange="handleUserCheckboxChange('${user.id}')">
+            <div class="user-info">
+              <div class="user-name">${user.name}</div>
+              <div class="user-department">${user.department} • ${user.email}</div>
+            </div>
+            <div class="user-status ${isOnline ? 'online' : 'offline'}" title="${isOnline ? 'Online' : 'Offline'}"></div>
+          </div>
+        `;
+      }).join('');
+
+      updateSelectedUsersCount();
+    }
+
+    function toggleUserSelection(userId) {
+      const checkbox = document.getElementById(`user_${userId}`);
+      checkbox.checked = !checkbox.checked;
+      handleUserCheckboxChange(userId);
+    }
+
+    function handleUserCheckboxChange(userId) {
+      if (document.getElementById(`user_${userId}`).checked) {
+        selectedUsers.add(userId);
+      } else {
+        selectedUsers.delete(userId);
+      }
+      updateSelectedUsersCount();
+    }
+
+    function updateSelectedUsersCount() {
+      document.getElementById('selectedUsersCount').textContent = selectedUsers.size;
+    }
+
+    // Message reactions
+    function addReaction(messageId, emoji) {
+      const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+      if (messageElement) {
+        let reactionsDiv = messageElement.querySelector('.message-reactions');
+        if (!reactionsDiv) {
+          reactionsDiv = document.createElement('div');
+          reactionsDiv.className = 'message-reactions';
+          messageElement.appendChild(reactionsDiv);
+        }
+        
+        const existingReaction = reactionsDiv.querySelector(`[data-emoji="${emoji}"]`);
+        if (existingReaction) {
+          const count = parseInt(existingReaction.dataset.count) + 1;
+          existingReaction.dataset.count = count;
+          existingReaction.textContent = `${emoji} ${count}`;
+        } else {
+          const reactionEl = document.createElement('div');
+          reactionEl.className = 'reaction';
+          reactionEl.dataset.emoji = emoji;
+          reactionEl.dataset.count = '1';
+          reactionEl.textContent = `${emoji} 1`;
+          reactionEl.onclick = () => toggleReaction(messageId, emoji);
+          reactionsDiv.appendChild(reactionEl);
+        }
+      }
+    }
+
+    function toggleReaction(messageId, emoji) {
+      const reactionEl = document.querySelector(`[data-message-id="${messageId}"] [data-emoji="${emoji}"]`);
+      if (reactionEl) {
+        reactionEl.classList.toggle('active');
+      }
+    }
+
+    // Message replies
+    function replyToMessage(messageId) {
+      const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+      if (messageElement) {
+        const messageText = messageElement.querySelector('.message-bubble').textContent;
+        const sender = messageElement.querySelector('.message-meta').textContent.split(' •')[0];
+        
+        replyingTo = { id: messageId, text: messageText, sender: sender };
+        
+        const input = document.getElementById('messageInput');
+        input.placeholder = `Replying to ${sender}: ${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}`;
+        input.focus();
+      }
+    }
+
+    function cancelReply() {
+      replyingTo = null;
+      document.getElementById('messageInput').placeholder = 'Type your message...';
+    }
+
+    // Group creation modal functions
+    function showCreateGroupModal() {
+      document.getElementById('createGroupModal').classList.remove('hidden');
+      selectedUsers.clear();
+      loadUsersForGroupCreation();
+      document.getElementById('groupName').focus();
+    }
+
+    function hideCreateGroupModal() {
+      document.getElementById('createGroupModal').classList.add('hidden');
+      document.getElementById('createGroupForm').reset();
+      selectedUsers.clear();
+      updateSelectedUsersCount();
+    }
+
+    // Enhanced input handling
+    function handleInputKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+      
+      const textarea = event.target;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 80) + 'px';
+    }
+
+    // Perfect scroll function
+    function perfectScrollToBottom() {
+      const currentArea = currentView === 'channels' ? 'messagesArea' : 'directMessagesArea';
+      const anchorId = currentView === 'channels' ? 'messagesScrollAnchor' : 'directScrollAnchor';
+      const element = document.getElementById(currentArea);
+      const anchor = document.getElementById(anchorId);
+      
+      if (element && anchor) {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+        element.scrollTop = element.scrollHeight;
+        
+        requestAnimationFrame(() => {
+          element.scrollTop = element.scrollHeight;
         });
-    </script>
+        
+        setTimeout(() => {
+          element.scrollTop = element.scrollHeight;
+        }, 100);
+      }
+    }
+
+    function forceScrollToBottom() {
+      const currentArea = currentView === 'channels' ? 'messagesArea' : 'directMessagesArea';
+      const element = document.getElementById(currentArea);
+      
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+        
+        setTimeout(() => {
+          element.scrollTop = element.scrollHeight;
+        }, 50);
+      }
+    }
+
+    async function initSupabase() {
+      try {
+        updateConnectionStatus('connecting', '🔄 Connecting...');
+        
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const { data, error } = await supabase.from('messages').select('id').limit(1);
+        
+        if (error) {
+          updateConnectionStatus('disconnected', '❌ Database error');
+        } else {
+          updateConnectionStatus('connected', '✅ Connected');
+          setTimeout(() => {
+            document.getElementById('connectionStatus').style.display = 'none';
+          }, 2000);
+        }
+      } catch (error) {
+        updateConnectionStatus('disconnected', '❌ Connection failed');
+      }
+    }
+
+    function updateConnectionStatus(status, message) {
+      const statusEl = document.getElementById('connectionStatus');
+      statusEl.className = `connection-status ${status}`;
+      statusEl.textContent = message;
+    }
+
+    async function updateUserPresence(isOnline = true) {
+      if (!supabase || !currentUser) return;
+      
+      try {
+        const { error } = await supabase.from('user_profiles').upsert({
+          id: currentUser.id,
+          email: currentUser.email,
+          full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+          department: currentUser.user_metadata?.department || 'Unknown',
+          status: isOnline ? 'online' : 'offline',
+          is_online: isOnline,
+          last_seen: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      } catch (error) {
+        console.error('Presence error:', error);
+      }
+    }
+
+    function startPresenceHeartbeat() {
+      updateUserPresence(true);
+      presenceHeartbeat = setInterval(() => {
+        updateUserPresence(true);
+      }, 10000);
+    }
+
+    function stopPresenceHeartbeat() {
+      if (presenceHeartbeat) {
+        clearInterval(presenceHeartbeat);
+        presenceHeartbeat = null;
+      }
+      updateUserPresence(false);
+    }
+
+    // Real-time sync with proper notification handling
+    function setupRealtimeSync() {
+      if (!supabase || !currentUser) return;
+
+      try {
+        if (messageSubscription) {
+          messageSubscription.unsubscribe();
+        }
+        if (directMessageSubscription) {
+          directMessageSubscription.unsubscribe();
+        }
+        
+        messageSubscription = supabase
+          .channel(`messages-${currentUser.id}-${Date.now()}`)
+          .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'messages' },
+            (payload) => {
+              if (payload.new.user_id !== currentUser.id) {
+                displayNewChannelMessage(payload.new);
+                
+                // Show push notification for new message
+                const senderName = payload.new.sender_name || 'Someone';
+                const channelName = payload.new.channel || 'Unknown Channel';
+                const messageContent = payload.new.content || 'New message';
+                
+                showPushNotification(
+                  `New message in #${channelName}`,
+                  `${senderName}: ${messageContent.substring(0, 100)}${messageContent.length > 100 ? '...' : ''}`,
+                  {
+                    tag: `channel-${channelName}`,
+                    data: {
+                      type: 'channel_message',
+                      channel: channelName,
+                      sender: senderName
+                    }
+                  }
+                );
+              }
+            }
+          )
+          .subscribe();
+
+        directMessageSubscription = supabase
+          .channel(`direct-messages-${currentUser.id}-${Date.now()}`)
+          .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'direct_messages' },
+            (payload) => {
+              if (payload.new.sender_id !== currentUser.id) {
+                displayNewDirectMessage(payload.new);
+                
+                // Show push notification for new direct message
+                const senderUser = allUsers.find(u => u.id === payload.new.sender_id);
+                const senderName = senderUser ? senderUser.name : 'Someone';
+                const messageContent = payload.new.content || 'New message';
+                
+                showPushNotification(
+                  `New message from ${senderName}`,
+                  messageContent.substring(0, 100) + (messageContent.length > 100 ? '...' : ''),
+                  {
+                    tag: `direct-${senderName}`,
+                    data: {
+                      type: 'direct_message',
+                      sender: senderName
+                    }
+                  }
+                );
+              }
+            }
+          )
+          .subscribe();
+      } catch (error) {
+        console.error('Real-time setup error:', error);
+      }
+    }
+
+    function displayNewChannelMessage(messageData) {
+      const message = {
+        id: messageData.id,
+        user: messageData.sender_name,
+        message: messageData.content,
+        time: new Date(messageData.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        status: 'delivered'
+      };
+
+      if (!messages[messageData.channel]) {
+        messages[messageData.channel] = [];
+      }
+      
+      messages[messageData.channel].push(message);
+      
+      if (messageData.channel === currentChannel && currentView === 'channels') {
+        renderMessages();
+        perfectScrollToBottom();
+      }
+    }
+
+    function displayNewDirectMessage(messageData) {
+      const senderUser = allUsers.find(u => u.id === messageData.sender_id);
+      const senderName = senderUser ? senderUser.name : 'Unknown User';
+      
+      const message = {
+        id: messageData.id,
+        user: senderName,
+        message: messageData.content,
+        time: new Date(messageData.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        status: 'delivered'
+      };
+
+      if (!directMessages[senderName]) {
+        directMessages[senderName] = [];
+      }
+      
+      directMessages[senderName].push(message);
+      
+      if (senderName === currentDirectUser && currentView === 'direct') {
+        renderDirectMessages();
+        perfectScrollToBottom();
+      }
+    }
+
+    const loginTab = document.getElementById('loginTab');
+    const signupTab = document.getElementById('signupTab');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+
+    loginTab.addEventListener('click', () => {
+      loginForm.classList.remove('hidden');
+      signupForm.classList.add('hidden');
+      loginTab.classList.add('border-blue-500', 'text-blue-600');
+      signupTab.classList.remove('border-blue-500', 'text-blue-600');
+    });
+
+    signupTab.addEventListener('click', () => {
+      signupForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      signupTab.classList.add('border-blue-500', 'text-blue-600');
+      loginTab.classList.remove('border-blue-500', 'text-blue-600');
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (error) {
+          alert('Login failed: ' + error.message);
+        } else {
+          currentUser = data.user;
+          await showMessenger();
+        }
+      } catch (error) {
+        alert('Login failed. Please try again.');
+      }
+    });
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value;
+      const surname = document.getElementById('signupSurname').value;
+      const department = document.getElementById('signupDepartment').value;
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              name: name,
+              surname: surname,
+              department: department,
+              full_name: `${name} ${surname}`
+            }
+          }
+        });
+        
+        if (error) {
+          alert('Signup failed: ' + error.message);
+        } else {
+          currentUser = data.user;
+          alert('Signup successful! You can now use the messenger.');
+          await showMessenger();
+        }
+      } catch (error) {
+        alert('Signup failed. Please try again.');
+      }
+    });
+
+    async function showMessenger() {
+      document.getElementById('authContainer').classList.add('hidden');
+      document.getElementById('messengerWidget').classList.remove('hidden');
+      
+      startPresenceHeartbeat();
+      await loadUserProfile();
+      await loadUsers();
+      setupRealtimeSync();
+      await loadExistingMessages();
+      loadWelcomeMessage();
+      
+      initializeEmojiPicker();
+      
+      const inputBar = document.querySelector('.chat-input-bar');
+      if (inputBar) {
+        inputBar.style.display = 'flex';
+      }
+      
+      const newGroupBtn = document.getElementById('newGroupBtn');
+      if (newGroupBtn) {
+        newGroupBtn.style.display = 'inline-flex';
+        newGroupBtn.style.visibility = 'visible';
+      }
+      
+      updateChannelMemberCount();
+      
+      // Check notification permission after login
+      checkNotificationPermission();
+    }
+
+    function updateChannelMemberCount() {
+      const currentChannelInfo = channels.find(ch => ch.name === currentChannel);
+      const memberCountEl = document.getElementById('channelMemberCount');
+      if (currentChannelInfo && memberCountEl) {
+        memberCountEl.textContent = `${currentChannelInfo.memberCount} members`;
+      }
+    }
+
+    async function loadUserProfile() {
+      if (currentUser) {
+        const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+        
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileEmail').textContent = currentUser.email;
+        document.getElementById('profileDepartment').textContent = currentUser.user_metadata?.department || 'Unknown';
+        document.getElementById('profileInitials').textContent = initials;
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const { data: users, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .neq('id', currentUser?.id || '');
+
+        if (!error) {
+          allUsers = users.map(user => ({
+            id: user.id,
+            name: user.full_name || user.email.split('@')[0],
+            email: user.email,
+            department: user.department || 'Unknown',
+            status: user.is_online ? 'online' : 'offline'
+          }));
+        } else {
+          allUsers = [];
+        }
+        
+        updateUsersList();
+      } catch (error) {
+        allUsers = [];
+        updateUsersList();
+      }
+    }
+
+    async function loadExistingMessages() {
+      try {
+        const { data: channelMessages, error: channelError } = await supabase
+          .from('messages')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (!channelError) {
+          channelMessages.forEach(msg => {
+            if (!messages[msg.channel]) {
+              messages[msg.channel] = [];
+            }
+            
+            messages[msg.channel].push({
+              id: msg.id,
+              user: msg.user_id === currentUser.id ? 'You' : msg.sender_name,
+              message: msg.content,
+              time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+              status: 'delivered'
+            });
+          });
+        }
+
+        const { data: directMsgs, error: directError } = await supabase
+          .from('direct_messages')
+          .select('*')
+          .or(`sender_id.eq.${currentUser.id},receiver_name.eq.${currentUser.user_metadata?.full_name || currentUser.email.split('@')[0]}`)
+          .order('created_at', { ascending: true });
+
+        if (!directError) {
+          directMsgs.forEach(msg => {
+            const senderUser = allUsers.find(u => u.id === msg.sender_id);
+            const senderName = senderUser ? senderUser.name : 'Unknown User';
+            const chatPartner = msg.sender_id === currentUser.id ? msg.receiver_name : senderName;
+            
+            if (!directMessages[chatPartner]) {
+              directMessages[chatPartner] = [];
+            }
+            
+            directMessages[chatPartner].push({
+              id: msg.id,
+              user: msg.sender_id === currentUser.id ? 'You' : senderName,
+              message: msg.content,
+              time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+              status: 'delivered'
+            });
+          });
+        }
+
+        if (currentView === 'channels') {
+          renderMessages();
+          perfectScrollToBottom();
+        } else if (currentView === 'direct' && currentDirectUser) {
+          renderDirectMessages();
+          perfectScrollToBottom();
+        }
+        
+      } catch (error) {
+        console.error('Load messages error:', error);
+      }
+    }
+
+    function updateUsersList() {
+      const usersList = document.getElementById('usersList');
+      if (allUsers.length === 0) {
+        usersList.innerHTML = '<p class="text-xs text-gray-500 p-2">No other users found</p>';
+        return;
+      }
+      
+      usersList.innerHTML = allUsers.map(user => `
+        <button onclick="switchToDirectChat('${user.name}')" class="user-btn w-full text-left px-2 py-1 rounded text-xs hover:bg-gray-200 flex items-center gap-2">
+          <span class="w-2 h-2 ${user.status === 'online' ? 'bg-green-500' : 'bg-gray-400'} rounded-full"></span>
+          <div class="flex-1">
+            <div class="font-medium">${user.name}</div>
+            <div class="text-xs text-gray-500">${user.department}</div>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function loadWelcomeMessage() {
+      const welcomeMsg = {
+        id: 'welcome',
+        user: 'GFZA System',
+        message: '🚀 Welcome to GFZA Messenger! Professional communication platform for GFZA staff.',
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        status: 'delivered'
+      };
+      messages[currentChannel].push(welcomeMsg);
+      renderMessages();
+      perfectScrollToBottom();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+      
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const senderName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+      
+      const newMessage = {
+        id: messageId,
+        user: 'You',
+        message: message,
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        status: 'sending',
+        replyTo: replyingTo
+      };
+      
+      if (currentView === 'channels') {
+        if (!messages[currentChannel]) {
+          messages[currentChannel] = [];
+        }
+        messages[currentChannel].push(newMessage);
+        renderMessages();
+        perfectScrollToBottom();
+        
+        if (supabase && currentUser) {
+          try {
+            const insertData = {
+              channel: currentChannel,
+              user_id: currentUser.id,
+              sender_name: senderName,
+              content: message,
+              message_type: 'user'
+            };
+            
+            const { data, error } = await supabase
+              .from('messages')
+              .insert([insertData]);
+            
+            if (error) {
+              updateMessageStatus(messageId, 'failed');
+            } else {
+              updateMessageStatus(messageId, 'delivered');
+            }
+          } catch (error) {
+            updateMessageStatus(messageId, 'failed');
+          }
+        }
+      } else if (currentView === 'direct' && currentDirectUser) {
+        if (!directMessages[currentDirectUser]) {
+          directMessages[currentDirectUser] = [];
+        }
+        directMessages[currentDirectUser].push(newMessage);
+        renderDirectMessages();
+        perfectScrollToBottom();
+        
+        if (supabase && currentUser) {
+          try {
+            const insertData = {
+              sender_id: currentUser.id,
+              receiver_name: currentDirectUser,
+              content: message
+            };
+            
+            const { data, error } = await supabase
+              .from('direct_messages')
+              .insert([insertData]);
+            
+            if (error) {
+              updateDirectMessageStatus(messageId, 'failed');
+            } else {
+              updateDirectMessageStatus(messageId, 'delivered');
+            }
+          } catch (error) {
+            updateDirectMessageStatus(messageId, 'failed');
+          }
+        }
+      }
+      
+      input.value = '';
+      input.style.height = 'auto';
+      cancelReply();
+      
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send';
+    }
+
+    function updateMessageStatus(messageId, status) {
+      Object.keys(messages).forEach(channel => {
+        const messageIndex = messages[channel].findIndex(msg => msg.id === messageId);
+        if (messageIndex !== -1) {
+          messages[channel][messageIndex].status = status;
+          if (channel === currentChannel) {
+            renderMessages();
+          }
+        }
+      });
+    }
+
+    function updateDirectMessageStatus(messageId, status) {
+      Object.keys(directMessages).forEach(user => {
+        const messageIndex = directMessages[user].findIndex(msg => msg.id === messageId);
+        if (messageIndex !== -1) {
+          directMessages[user][messageIndex].status = status;
+          if (user === currentDirectUser) {
+            renderDirectMessages();
+          }
+        }
+      });
+    }
+
+    function getStatusIcon(status) {
+      switch (status) {
+        case 'sending': return '🕐';
+        case 'sent': return '✓';
+        case 'delivered': return '✓✓';
+        case 'failed': return '❌';
+        default: return '';
+      }
+    }
+
+    // Enhanced message rendering with reactions and replies
+    function renderMessages() {
+      const messagesArea = document.getElementById('messagesArea');
+      const messagesToShow = messages[currentChannel] || [];
+      
+      const scrollAnchor = document.getElementById('messagesScrollAnchor');
+      messagesArea.innerHTML = '';
+      
+      if (messagesToShow.length === 0) {
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'text-center text-gray-500 py-4';
+        welcomeDiv.innerHTML = `
+          <p class="text-xs font-medium">Welcome to ${currentChannel}!</p>
+          <p class="text-xs text-gray-400">Professional communication platform</p>
+        `;
+        messagesArea.appendChild(welcomeDiv);
+      } else {
+        messagesToShow.forEach((msg, index) => {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `message-item ${msg.user === 'You' ? 'sent' : 'received'}`;
+          messageDiv.setAttribute('data-message-id', msg.id);
+          messageDiv.setAttribute('data-index', index);
+          
+          const bubbleDiv = document.createElement('div');
+          bubbleDiv.className = `message-bubble ${msg.user === 'You' ? 'sent' : 'received'} ${msg.replyTo ? 'reply' : ''}`;
+          
+          let content = '';
+          
+          if (msg.replyTo) {
+            content += `<div class="reply-to">↳ Replying to ${msg.replyTo.sender}: ${msg.replyTo.text.substring(0, 30)}${msg.replyTo.text.length > 30 ? '...' : ''}</div>`;
+          }
+          
+          if (msg.file) {
+            content += `
+              <div class="file-attachment">
+                <div class="file-icon">${getFileIcon(msg.file.type)}</div>
+                <div class="file-info">
+                  <div class="file-name">${msg.file.name}</div>
+                  <div class="file-size">${msg.file.size}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            content += msg.message;
+          }
+          
+          bubbleDiv.innerHTML = content;
+          
+          // Add message actions
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'message-actions';
+          actionsDiv.innerHTML = `
+            <button class="message-action" onclick="addReaction('${msg.id}', '👍')" title="Like">👍</button>
+            <button class="message-action" onclick="addReaction('${msg.id}', '❤️')" title="Love">❤️</button>
+            <button class="message-action" onclick="replyToMessage('${msg.id}')" title="Reply">↩️</button>
+          `;
+          bubbleDiv.appendChild(actionsDiv);
+          
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'message-meta';
+          metaDiv.innerHTML = `
+            ${msg.user} • ${msg.time}
+            ${msg.user === 'You' ? `<span class="message-status ${msg.status || 'sent'}">${getStatusIcon(msg.status || 'sent')}</span>` : ''}
+          `;
+          
+          messageDiv.appendChild(bubbleDiv);
+          messageDiv.appendChild(metaDiv);
+          messagesArea.appendChild(messageDiv);
+        });
+      }
+      
+      messagesArea.appendChild(scrollAnchor);
+    }
+
+    // Enhanced direct message rendering
+    function renderDirectMessages() {
+      const messagesArea = document.getElementById('directMessagesArea');
+      const messagesToShow = directMessages[currentDirectUser] || [];
+      
+      const scrollAnchor = document.getElementById('directScrollAnchor');
+      messagesArea.innerHTML = '';
+      
+      if (messagesToShow.length === 0) {
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'text-center text-gray-500 py-4';
+        welcomeDiv.innerHTML = `
+          <p class="text-xs">Start chatting with ${currentDirectUser}</p>
+          <p class="text-xs text-gray-400">Professional communication platform</p>
+        `;
+        messagesArea.appendChild(welcomeDiv);
+      } else {
+        messagesToShow.forEach((msg, index) => {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `message-item ${msg.user === 'You' ? 'sent' : 'received'}`;
+          messageDiv.setAttribute('data-message-id', msg.id);
+          messageDiv.setAttribute('data-index', index);
+          
+          const bubbleDiv = document.createElement('div');
+          bubbleDiv.className = `message-bubble ${msg.user === 'You' ? 'sent' : 'received'} ${msg.replyTo ? 'reply' : ''}`;
+          
+          let content = '';
+          
+          if (msg.replyTo) {
+            content += `<div class="reply-to">↳ Replying to ${msg.replyTo.sender}: ${msg.replyTo.text.substring(0, 30)}${msg.replyTo.text.length > 30 ? '...' : ''}</div>`;
+          }
+          
+          if (msg.file) {
+            content += `
+              <div class="file-attachment">
+                <div class="file-icon">${getFileIcon(msg.file.type)}</div>
+                <div class="file-info">
+                  <div class="file-name">${msg.file.name}</div>
+                  <div class="file-size">${msg.file.size}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            content += msg.message;
+          }
+          
+          bubbleDiv.innerHTML = content;
+          
+          // Add message actions
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'message-actions';
+          actionsDiv.innerHTML = `
+            <button class="message-action" onclick="addReaction('${msg.id}', '👍')" title="Like">👍</button>
+            <button class="message-action" onclick="addReaction('${msg.id}', '❤️')" title="Love">❤️</button>
+            <button class="message-action" onclick="replyToMessage('${msg.id}')" title="Reply">↩️</button>
+          `;
+          bubbleDiv.appendChild(actionsDiv);
+          
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'message-meta';
+          metaDiv.innerHTML = `
+            ${msg.user} • ${msg.time}
+            ${msg.user === 'You' ? `<span class="message-status ${msg.status || 'sent'}">${getStatusIcon(msg.status || 'sent')}</span>` : ''}
+          `;
+          
+          messageDiv.appendChild(bubbleDiv);
+          messageDiv.appendChild(metaDiv);
+          messagesArea.appendChild(messageDiv);
+        });
+      }
+      
+      messagesArea.appendChild(scrollAnchor);
+    }
+
+    function getFileIcon(fileType) {
+      if (fileType.startsWith('image/')) return '🖼️';
+      if (fileType.startsWith('video/')) return '🎥';
+      if (fileType.startsWith('audio/')) return '🎵';
+      if (fileType.includes('pdf')) return '📄';
+      if (fileType.includes('word')) return '📝';
+      if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
+      return '📎';
+    }
+
+    document.getElementById('channelsTab').addEventListener('click', () => switchView('channels'));
+    document.getElementById('directTab').addEventListener('click', () => switchView('direct'));
+    document.getElementById('profileTab').addEventListener('click', () => switchView('profile'));
+
+    function switchView(view) {
+      currentView = view;
+      
+      document.getElementById('channelsView').classList.add('hidden');
+      document.getElementById('directView').classList.add('hidden');
+      document.getElementById('profileView').classList.add('hidden');
+      
+      document.getElementById(view + 'View').classList.remove('hidden');
+      
+      document.querySelectorAll('[id$="Tab"]').forEach(tab => {
+        tab.classList.remove('bg-white', 'border-b-2', 'border-green-500', 'text-green-600');
+        tab.classList.add('text-gray-500');
+      });
+      
+      document.getElementById(view + 'Tab').classList.add('bg-white', 'border-b-2', 'border-green-500', 'text-green-600');
+      document.getElementById(view + 'Tab').classList.remove('text-gray-500');
+      
+      const inputBar = document.querySelector('.chat-input-bar');
+      if (inputBar) {
+        inputBar.style.display = 'flex';
+      }
+      
+      if (view === 'channels') {
+        setTimeout(() => {
+          renderMessages();
+          perfectScrollToBottom();
+        }, 100);
+      } else if (view === 'direct' && currentDirectUser) {
+        setTimeout(() => {
+          renderDirectMessages();
+          perfectScrollToBottom();
+        }, 100);
+      }
+    }
+
+    function switchChannel(channelName) {
+      currentChannel = channelName;
+      document.getElementById('currentChannel').textContent = '# ' + channelName;
+      
+      document.querySelectorAll('.channel-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      updateChannelMemberCount();
+      
+      renderMessages();
+      perfectScrollToBottom();
+    }
+
+    async function switchToDirectChat(userName) {
+      currentDirectUser = userName;
+      document.getElementById('currentDirectChat').textContent = userName;
+      
+      document.querySelectorAll('.user-btn').forEach(btn => {
+        btn.classList.remove('bg-green-100', 'text-green-700', 'font-medium');
+      });
+      event.target.classList.add('bg-green-100', 'text-green-700', 'font-medium');
+      
+      if (!directMessages[userName]) {
+        directMessages[userName] = [];
+        
+        try {
+          const currentUserName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+          const targetUser = allUsers.find(u => u.name === userName);
+          
+          if (targetUser) {
+            const { data: msgs, error } = await supabase
+              .from('direct_messages')
+              .select('*')
+              .or(`and(sender_id.eq.${currentUser.id},receiver_name.eq.${userName}),and(sender_id.eq.${targetUser.id},receiver_name.eq.${currentUserName})`)
+              .order('created_at', { ascending: true });
+
+            if (!error) {
+              msgs.forEach(msg => {
+                directMessages[userName].push({
+                  id: msg.id,
+                  user: msg.sender_id === currentUser.id ? 'You' : userName,
+                  message: msg.content,
+                  time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                  status: 'delivered'
+                });
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Load direct messages error:', error);
+        }
+      }
+      
+      renderDirectMessages();
+      perfectScrollToBottom();
+    }
+
+    async function logout() {
+      try {
+        stopPresenceHeartbeat();
+        
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+        
+        if (messageSubscription) {
+          messageSubscription.unsubscribe();
+        }
+        if (directMessageSubscription) {
+          directMessageSubscription.unsubscribe();
+        }
+        
+        currentUser = null;
+        messages = { 'General': [], 'HR Updates': [], 'Finance': [] };
+        directMessages = {};
+        currentChannel = 'General';
+        currentDirectUser = '';
+        
+        document.getElementById('messengerWidget').classList.add('hidden');
+        document.getElementById('authContainer').classList.remove('hidden');
+        
+        alert('Logged out successfully!');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+
+    document.getElementById('minimizeBtn').addEventListener('click', () => {
+      const widget = document.getElementById('messengerWidget');
+      widget.classList.toggle('messenger-minimized');
+      const btn = document.getElementById('minimizeBtn');
+      btn.textContent = widget.classList.contains('messenger-minimized') ? '+' : '−';
+    });
+
+    // Handle group creation form submission
+    document.addEventListener('DOMContentLoaded', function() {
+      const createGroupForm = document.getElementById('createGroupForm');
+      if (createGroupForm) {
+        createGroupForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const createBtn = document.getElementById('createGroupBtn');
+          const originalText = createBtn.textContent;
+          
+          createBtn.disabled = true;
+          createBtn.textContent = '🔄 Creating...';
+          
+          const groupName = document.getElementById('groupName').value.trim();
+          const groupDescription = document.getElementById('groupDescription').value.trim();
+          const groupType = document.getElementById('groupType').value;
+          const groupDepartment = document.getElementById('groupDepartment').value;
+          
+          if (!groupName) {
+            alert('Group name is required!');
+            createBtn.disabled = false;
+            createBtn.textContent = originalText;
+            return;
+          }
+
+          if (selectedUsers.size === 0) {
+            alert('Please select at least one user to add to the group.');
+            createBtn.disabled = false;
+            createBtn.textContent = originalText;
+            return;
+          }
+          
+          if (channels.find(ch => ch.name.toLowerCase() === groupName.toLowerCase())) {
+            alert('A group with this name already exists!');
+            createBtn.disabled = false;
+            createBtn.textContent = originalText;
+            return;
+          }
+          
+          try {
+            const newChannel = {
+              name: groupName,
+              type: groupType,
+              description: groupDescription || `${groupName} group discussions`,
+              department: groupDepartment,
+              memberCount: selectedUsers.size + 1,
+              members: Array.from(selectedUsers),
+              createdBy: currentUser.id,
+              createdAt: new Date().toISOString()
+            };
+            
+            channels.push(newChannel);
+            messages[groupName] = [];
+            
+            const welcomeMessage = {
+              id: `welcome_${Date.now()}`,
+              user: 'GFZA System',
+              message: `🎉 Welcome to ${groupName}! ${selectedUsers.size} members added. ${groupDescription ? groupDescription : 'Start your discussions here.'}`,
+              time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+              status: 'delivered'
+            };
+            messages[groupName].push(welcomeMessage);
+            
+            const channelsList = document.getElementById('channelsList');
+            const newChannelBtn = document.createElement('button');
+            newChannelBtn.onclick = () => switchChannel(groupName);
+            newChannelBtn.className = 'channel-btn';
+            
+            let icon = '#';
+            if (groupType === 'private') icon = '🔒';
+            else if (groupType === 'department') icon = '🏢';
+            
+            newChannelBtn.innerHTML = `${icon} ${groupName}`;
+            channelsList.appendChild(newChannelBtn);
+            
+            hideCreateGroupModal();
+            
+            setTimeout(() => {
+              switchChannel(groupName);
+              showNotificationToast('✅ Group Created!', `"${groupName}" created with ${selectedUsers.size} members.`);
+            }, 100);
+            
+          } catch (error) {
+            console.error('Error creating group:', error);
+            alert('Failed to create group. Please try again.');
+          } finally {
+            createBtn.disabled = false;
+            createBtn.textContent = originalText;
+          }
+        });
+      }
+    });
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', (e) => {
+      const emojiPicker = document.getElementById('emojiPicker');
+      const emojiBtn = e.target.closest('[onclick="toggleEmojiPicker()"]');
+      
+      if (!emojiBtn && !emojiPicker.contains(e.target)) {
+        emojiPicker.style.display = 'none';
+      }
+    });
+
+    // Close modal when clicking outside
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('createGroupModal');
+      if (e.target === modal) {
+        hideCreateGroupModal();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      stopPresenceHeartbeat();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initSupabase();
+    });
+  </script>
+
 </body>
 </html>
